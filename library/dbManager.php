@@ -33,14 +33,97 @@
 		$key = str_replace("/", "", $key);
 		return $key;
 	}
-echo crypt("asdfasdf", "");
 	function InsertUser($_email, $_pass){
 		global $db;
+		$pass = base64_encode( $_email);
+		$_token = makeEncryptKey($_pass);
+		$sql = "SELECT * FROM users WHERE Email='$_email'";
+		$record = $db->select($sql);
+		if( $record ){
+			return false;
+		}
 		$sql = "INSERT INTO users(Email, Password, Token) VALUES ( ?, ?, ?)";
 		$stmt = $db->prepare($sql);
-		$_token = makeEncryptKey($_email);
+		$retVal = $stmt->execute([$_email, $pass, $_token]);
 
-		$stmt->execute([$_email, $_pass, $_token]);
+		$sql = "SELECT * FROM users WHERE Email='$_email'";
+		$record = $db->select($sql);
+		$dirName = $record[0]["Id"];
+		mkdir(__DIR__ . "/" . $dirName);
 
+		return true;
 	}
+	function VerifyUser($_email, $_pass){
+		global $db;
+		$sql = "SELECT * from users WHERE Email='$_email'";
+		$record = $db->select($sql);
+		if( $record ){
+			foreach ($record as $value) {
+				if( strcasecmp(base64_decode($value["Token"]), $_pass)){
+					return $value["Token"];
+				}
+			}
+			return "";
+		}
+		return "";
+	}
+	function AddContents($_token, $_contents){
+		global $db;
+		$sql = "SELECT * FROM users WHERE Token='$_token'";
+		$record = $db->select($sql);
+		if( $record){
+			$user = $record[0];
+			$Id = $user["Id"];
+			$time = time();
+			// $
+			file_put_contents(__DIR__ . "/" . $Id . "/" . $time . ".html", $_contents);
+			return $_SERVER['HTTP_HOST'] .dirname( $_SERVER['REQUEST_URI']) . "/" . $Id . "/" . $time . ".html";
+		}
+		return "";
+	}
+	function GetAllUrls($_Id){
+		$dirName = __DIR__ . "/" . $_Id . "/";
+		if(!file_exists($dirName))return [];
+		$files = scandir($dirName);
+		if( $files == FALSE)
+			return [];
+		$urls = [];
+		foreach ($files as $value) {
+			if( is_dir($value))
+				continue;
+			$urls[] = $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] .dirname( $_SERVER['REQUEST_URI']) . "/library/" . $_Id . "/" . $value;
+		}
+		return $urls;
+	}
+	function GetIdFromEmail($_email){
+		global $db;
+		$sql = "SELECT Id FROM users WHERE Email='$_email'";
+		$record = $db->select($sql);
+		if( $record){
+			return $record[0]['Id'];
+		}
+		return 0;
+	}
+	function GetIdFromToken($_token){
+		global $db;
+		$sql = "SELECT Id FROM users WHERE Token='$_token'";
+		$record = $db->select($sql);
+		if( $record){
+			return $record[0]['Id'];
+		}
+		return 0;
+	}
+	function GetAllContentsFromEmail($_email){
+		$Id = GetIdFromEmail($_email);
+		if( $Id == 0)
+			return [];
+		return GetAllUrls($Id);
+	}
+	function GetAllContentsFromToken($_token){
+		$Id = GetIdFromToken($_token);
+		if( $Id == 0)
+			return [];
+		return GetAllUrls($Id);
+	}
+
 ?>

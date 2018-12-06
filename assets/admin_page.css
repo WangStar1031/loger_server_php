@@ -1,0 +1,51 @@
+
+	body{ margin: 0px }
+	.auth_main{
+		display: -ms-flexbox;
+		display: flex;
+		-ms-flex-align: center;
+		align-items: center;
+		height: 100vh;
+		width: 100%;
+		background: url(images/login-bg.jpg);
+		background-size: cover;
+	}
+	.auth_block{
+		width: 540px;
+		margin: 0 auto;
+		border-radius: 5px;
+		background: rgba(0, 0, 0, 0.55);
+		color: #fff;
+		padding: 32px;
+	}
+	.login, .newUser{
+		margin: auto; width: 100%;
+	}
+	.form_control{
+		display: block;
+		width: 100%;
+		height: calc(2.25rem + 2px);
+		padding: .375rem .75rem;
+		font-size: 1rem;
+		line-height: 1.5;
+		color: #495057;
+		background-color: #fff;
+		background-clip: padding-box;
+		border: 1px solid #ced4da;
+		border-radius: .25rem;
+		transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+	}
+	table td{ padding: 10px; }
+	table, table td input{ width: 100%; }
+	button{
+		border-width: 1px;
+		color: white;
+		background: transparent;
+		border-color: #d6d6d6;
+		padding: 6px 12px;
+	}
+	table label{
+		color: white;
+	}
+	table td input{ outline: none;}
+	.DispItem{ display: none; }
