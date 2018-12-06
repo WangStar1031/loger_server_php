@@ -80,7 +80,7 @@
 		$time = time();
 		// $
 		file_put_contents(__DIR__ . "/" . $Id . "/" . $time . ".html", $_contents);
-		return $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] .dirname( $_SERVER['REQUEST_URI']) . "/library/" . $Id . "/" . $time . ".html";
+		return $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $Id . "/" . $time . ".html";
 	}
 	function GetAllUrls($_Id){
 		$dirName = __DIR__ . "/" . $_Id . "/";
@@ -92,7 +92,7 @@
 		foreach ($files as $value) {
 			if( is_dir($value))
 				continue;
-			$urls[] = $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] .dirname( $_SERVER['REQUEST_URI']) . "/library/" . $_Id . "/" . $value;
+			$urls[] = $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $_Id . "/" . $value;
 		}
 		return $urls;
 	}
