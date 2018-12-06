@@ -1,13 +1,11 @@
 <script src="./assets/jquery/jquery-3.2.1.min.js"></script>
 <link rel="stylesheet" type="text/css" href="./assets/admin_page.css?<?=time()?>">
 <link rel="stylesheet" href="./assets/bootstrap/css/bootstrap.min.css">
-<!-- <script src="./assets/bootstrap/js/bootstrap.min.js"></script> -->
+
 <?php
 session_start();
 
 require_once __DIR__ . "/library/dbManager.php";
-// require_once __DIR__ . "/vendor/autoload.php";
-
 
 if( isset($_POST['userName'])){
 	$userName = $_POST['userName'];
@@ -22,10 +20,8 @@ if( isset($_POST['userName'])){
 }
 $token = "";
 if( isset($_SESSION['token'])) $token = $_SESSION['token'];
-// echo $token;
 if( $token != ""){
 	$myData = GetAllContentsFromToken($token);
-	// print_r($myData);
 ?>
 <style type="text/css">
 	li{
@@ -38,6 +34,7 @@ if( $token != ""){
 	</div>
 	<br>
 	<h2>My contents</h2>
+	<p>There are <?=count($myData)?> records.</p>
 	<div class="contents">
 		<ul>
 			<?php
@@ -85,7 +82,7 @@ if( $token != ""){
 				</tr>
 				<tr>
 					<td><button>Log in</button></td>
-					<td><a href="user_signup.php">Sign up</a></td>
+					<td><a href="signup.php">Sign up</a></td>
 				</tr>
 			</table>
 		</form>

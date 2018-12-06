@@ -35,7 +35,7 @@
 	}
 	function InsertUser($_email, $_pass){
 		global $db;
-		$pass = base64_encode( $_email);
+		$pass = base64_encode( $_pass);
 		$_token = makeEncryptKey($_pass);
 		$sql = "SELECT * FROM users WHERE Email='$_email'";
 		$record = $db->select($sql);
@@ -59,7 +59,9 @@
 		$record = $db->select($sql);
 		if( $record ){
 			foreach ($record as $value) {
-				if( strcasecmp(base64_decode($value["Token"]), $_pass)){
+				$pass = base64_decode($value["Password"]);
+				if( strcasecmp( $pass, $_pass) == 0){
+					// echo($value["Token"]);
 					return $value["Token"];
 				}
 			}
@@ -69,17 +71,16 @@
 	}
 	function AddContents($_token, $_contents){
 		global $db;
-		$sql = "SELECT * FROM users WHERE Token='$_token'";
-		$record = $db->select($sql);
-		if( $record){
-			$user = $record[0];
-			$Id = $user["Id"];
-			$time = time();
-			// $
-			file_put_contents(__DIR__ . "/" . $Id . "/" . $time . ".html", $_contents);
-			return $_SERVER['HTTP_HOST'] .dirname( $_SERVER['REQUEST_URI']) . "/" . $Id . "/" . $time . ".html";
+		$Id = GetIdFromToken($_token);
+		if( $Id == 0){
+			return "";
 		}
-		return "";
+		// echo $Id;
+		// $Id = $user["Id"];
+		$time = time();
+		// $
+		file_put_contents(__DIR__ . "/" . $Id . "/" . $time . ".html", $_contents);
+		return $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] .dirname( $_SERVER['REQUEST_URI']) . "/library/" . $Id . "/" . $time . ".html";
 	}
 	function GetAllUrls($_Id){
 		$dirName = __DIR__ . "/" . $_Id . "/";
@@ -106,10 +107,10 @@
 	}
 	function GetIdFromToken($_token){
 		global $db;
-		$sql = "SELECT Id FROM users WHERE Token='$_token'";
+		$sql = "SELECT Id FROM users WHERE Token='$_token';";
 		$record = $db->select($sql);
 		if( $record){
-			return $record[0]['Id'];
+			return $record[0]["Id"];
 		}
 		return 0;
 	}

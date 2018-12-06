@@ -8,6 +8,8 @@ $action = "";
 if( isset($_GET['action'])) $action = $_GET['action'];
 if( isset($_POST['action'])) $action = $_POST['action'];
 
+require_once __DIR__ . "/library/dbManager.php";
+
 switch ($action) {
 	case 'addUser':
 		$email = "";
@@ -36,6 +38,7 @@ switch ($action) {
 		$contents = "";
 		if( isset($_GET['contents'])) $contents = $_GET['contents'];
 		if( isset($_POST['contents'])) $contents = $_POST['contents'];
+		// echo $token . ":" . $contents;
 		echo AddContents($token, $contents);
 		break;
 	default:
