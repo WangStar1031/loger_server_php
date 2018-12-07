@@ -68,6 +68,30 @@
 		}
 		return "";
 	}
+	function getDomainUrl($url){
+		$_scheme = parse_url($url, PHP_URL_SCHEME);
+		$_user = parse_url($url, PHP_URL_USER);
+		$_pass = parse_url($url, PHP_URL_PASS);
+		$_host = parse_url($url, PHP_URL_HOST);
+		$_port = parse_url($url, PHP_URL_PORT);
+		$_path = parse_url($url, PHP_URL_PATH);
+		$_query = parse_url($url, PHP_URL_QUERY);
+		$_fragment = parse_url($url, PHP_URL_FRAGMENT);
+		$retVal = $_scheme . "://";
+		if( $_user){
+			$retVal .= $_user . ":";
+			if( $_pass){
+				$retVal .= $_pass . "@";
+			}
+		}
+		if( $_host){
+			$retVal .= $_host;
+		}
+		if( $_port){
+			$retVal .= ":" . $_port;
+		}
+		return $retVal;
+	}
 	function AddContents($_token, $_contents, $_topic){
 		global $db;
 		$Id = GetIdFromToken($_token);
@@ -80,6 +104,8 @@
 		if( count($arrContents) < 2)return " less than 2 " . json_encode($arrContents);
 		$_url = $arrContents[0];
 		$texts = $arrContents[1];
+		$texts = str_replace('href="/', 'href="' . getDomainUrl($_url) . "/", $texts);
+		$texts = str_replace('src="/', 'src="' . getDomainUrl($_url) . "/", $texts);
 
 		$time = time();
 		if( !file_exists(__DIR__ . "/" . $Id . "/" . $_topic . "/")){
