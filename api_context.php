@@ -38,8 +38,26 @@ switch ($action) {
 		$contents = "";
 		if( isset($_GET['contents'])) $contents = $_GET['contents'];
 		if( isset($_POST['contents'])) $contents = $_POST['contents'];
+		$topic = "";
+		if( isset($_GET['topic'])) $topic = $_GET['topic'];
+		if( isset($_POST['topic'])) $topic = $_POST['topic'];
+		// $url = "";
+		// if( isset($_GET['url'])) $url = $_GET['url'];
+		// if( isset($_POST['url'])) $url = $_POST['url'];
+
 		// echo $token . ":" . $contents;
-		echo AddContents($token, $contents);
+		echo AddContents($token, $contents, $topic);
+		break;
+	case 'getAllUrls':
+		$email = "";
+		if( isset($_GET['email'])) $email = $_GET['email'];
+		if( isset($_POST['email'])) $email = $_POST['email'];
+		$pass = "";
+		if( isset($_GET['pass'])) $pass = $_GET['pass'];
+		if( isset($_POST['pass'])) $pass = $_POST['pass'];
+		$token = VerifyUser($email, $pass);
+		$contents = GetAllContentsFromToken($token);
+		echo json_encode($contents);
 		break;
 	default:
 		break;

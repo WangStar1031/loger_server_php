@@ -61,7 +61,6 @@
 			foreach ($record as $value) {
 				$pass = base64_decode($value["Password"]);
 				if( strcasecmp( $pass, $_pass) == 0){
-					// echo($value["Token"]);
 					return $value["Token"];
 				}
 			}
@@ -69,18 +68,38 @@
 		}
 		return "";
 	}
-	function AddContents($_token, $_contents){
+	function AddContents($_token, $_contents, $_topic){
 		global $db;
 		$Id = GetIdFromToken($_token);
+		// echo($_token);
 		if( $Id == 0){
-			return "";
+			return "Invalid token";
 		}
-		// echo $Id;
-		// $Id = $user["Id"];
+		$_contents = urldecode($_contents);
+		$arrContents = explode("|||||", $_contents);
+		if( count($arrContents) < 2)return " less than 2 " . json_encode($arrContents);
+		$_url = $arrContents[0];
+		$texts = $arrContents[1];
+
 		$time = time();
-		// $
-		file_put_contents(__DIR__ . "/" . $Id . "/" . $time . ".html", $_contents);
-		return $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $Id . "/" . $time . ".html";
+		if( !file_exists(__DIR__ . "/" . $Id . "/" . $_topic . "/")){
+			mkdir(__DIR__ . "/" . $Id . "/" . $_topic . "/");
+		}
+		$urls = @file_get_contents(__DIR__ . "/" . $Id . "/" . $_topic . ".json");
+		$arrUrls = [];
+		if( $urls ){
+			$arrUrls = explode("\n", $urls);
+		}
+		foreach ($arrUrls as $url) {
+			if( strcasecmp($url, $_url) == 0){
+				return "same url";
+			}
+		}
+		$arrUrls[] = $_url;
+		$urls = implode("\n", $arrUrls);
+		file_put_contents(__DIR__ . "/" . $Id . "/" . $_topic . ".json", $urls);
+		file_put_contents(__DIR__ . "/" . $Id . "/" . $_topic . "/" . $time . ".html", $texts);
+		return $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $Id . "/" . $_topic . "/" . $time . ".html";
 	}
 	function GetAllUrls($_Id){
 		$dirName = __DIR__ . "/" . $_Id . "/";
@@ -90,9 +109,22 @@
 			return [];
 		$urls = [];
 		foreach ($files as $value) {
-			if( is_dir($value))
+			if( $value == "." || $value == ".."){
 				continue;
-			$urls[] = $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $_Id . "/" . $value;
+			}
+			if( is_dir($dirName . $value)){
+				$topicObj = new \stdClass;
+				$subDirName = $dirName . $value . "/";
+				$subFiles = scandir($subDirName);
+				$topicObj->topic = $value;
+				$topicObj->urls = [];
+				foreach ($subFiles as $subValue) {
+					if( is_dir($subDirName . $subValue))continue;
+					$url = $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $_Id . "/" . $value . "/" . $subValue;
+					$topicObj->urls[] = $url;
+				}
+				$urls[] = $topicObj;
+			}
 		}
 		return $urls;
 	}

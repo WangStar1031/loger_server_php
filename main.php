@@ -27,6 +27,15 @@ if( $token != ""){
 	li{
 		list-style: none;
 	}
+	li.active{
+		background-color: red;
+	}
+	.topics{
+		float: left;
+	}
+	.HideItem{
+		display: none;
+	}
 </style>
 <div class="col-lg-12">
 	<div style="float: right;">
@@ -34,36 +43,50 @@ if( $token != ""){
 	</div>
 	<br>
 	<h2>My contents</h2>
-	<p>There are <?=count($myData)?> records.</p>
-	<div class="contents">
+	<p>There are <?=count($myData)?> topics.</p>
+	<div class="topic_list button-group">
 		<ul>
 			<?php
 				$_i = 0;
 				foreach ($myData as $value) {
 					$_i++;
+					// print_r($value);
 			?>
-			<li><a href="<?=$value?>" target="_blank"><?=basename($value)?></a></li>
+			<li class="topics" id="topics<?=$_i?>"><div class="btn <?=$_i==1?'btn-primary':'btn-secondary'?>" onclick="btnClicked(<?=$_i?>)"><?=$value->topic?></div></li>
 			<?php
 				}
 			?>
 		</ul>
+		<div style="clear: both;"></div>
+	</div>
+	<div class="contents_list">
+		<?php
+		$_i = 0;
+		foreach ($myData as $value) {
+			$_i++;
+		?>
+		<ul class="contents <?=$_i==1?'':'HideItem'?>" id="contents<?=$_i?>">
+			<?php
+			foreach ($value->urls as $url) {
+			?>
+			<li><a href="<?=$url?>" target='_blank'><?=basename($url)?></a></li>
+			<?php
+			}
+			?>
+		</ul>
+		<?php
+		}
+		?>
 	</div>
 </div>
-<style type="text/css">
-	.purchaseModal{
-		width: 400px !important;
+<script type="text/javascript">
+	function btnClicked(_i){
+		$(".btn-primary").removeClass("btn-primary").addClass("btn-secondary");
+		$("#topics" + _i).find(".btn").removeClass("btn-secondary").addClass("btn-primary");
+		$(".contents").addClass('HideItem');
+		$("#contents" + _i).removeClass('HideItem');
 	}
-	.purchaseModal table label{
-		color: black;
-	}
-	#payment-form{
-		margin-bottom: 0px;
-	}
-	.purchaseModal .modal-title{
-		color: #0079cb;
-	}
-</style>
-
+</script>
 <?php
 } else{
 ?>
