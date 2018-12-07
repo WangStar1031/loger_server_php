@@ -31,6 +31,15 @@ switch ($action) {
 		if( isset($_POST['pass'])) $pass = $_POST['pass'];
 		echo VerifyUser($email, $pass);
 		break;
+	case 'addTopic':
+		$token = "";
+		if( isset($_GET['token'])) $token = $_GET['token'];
+		if( isset($_POST['token'])) $token = $_POST['token'];
+		$topic = "";
+		if( isset($_GET['topic'])) $topic = $_GET['topic'];
+		if( isset($_POST['topic'])) $topic = $_POST['topic'];
+		echo AddTopic($token, $topic);
+		break;
 	case 'addContents':
 		$token = "";
 		if( isset($_GET['token'])) $token = $_GET['token'];

@@ -36,6 +36,9 @@ if( $token != ""){
 	.HideItem{
 		display: none;
 	}
+	.topics .btn{
+		margin-right: 1px;
+	}
 </style>
 <div class="col-lg-12">
 	<div style="float: right;">

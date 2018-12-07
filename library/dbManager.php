@@ -92,6 +92,20 @@
 		}
 		return $retVal;
 	}
+	function AddTopic($token, $topic){
+		global $db;
+		$Id = GetIdFromToken($token);
+		if( $Id == 0){
+			return "Invalid token";
+		}
+		$arrTopics = explode("%%", $topic);
+		foreach ($arrTopics as $value) {
+			if( !file_exists(__DIR__ . "/" . $Id . "/" . $value . "/")){
+				mkdir(__DIR__ . "/" . $Id . "/" . $value . "/");
+			}
+		}
+		return "Done.";
+	}
 	function AddContents($_token, $_contents, $_topic){
 		global $db;
 		$Id = GetIdFromToken($_token);
