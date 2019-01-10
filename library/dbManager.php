@@ -50,7 +50,13 @@
 		$record = $db->select($sql);
 		$dirName = $record[0]["Id"];
 		mkdir(__DIR__ . "/" . $dirName);
-
+		mkdir(__DIR__ . "/" . $dirName . "/" . "Default");
+		$data = [];
+		$_default = new \stdClass;
+		$_default->topicName = "Default";
+		$_default->createdTime = date("Y-F-d H:i a");
+		$data[] = $_default;
+		file_put_contents(__DIR__ . "/" . $dirName . "/". "topicInfo.dat", json_encode($data));
 		return true;
 	}
 	function VerifyUser($_email, $_pass){
@@ -67,6 +73,27 @@
 			return "";
 		}
 		return "";
+	}
+	function delTree($dir) { 
+		$files = array_diff(scandir($dir), array('.','..')); 
+		foreach ($files as $file) { 
+			(is_dir("$dir/$file")) ? delTree("$dir/$file") : unlink("$dir/$file"); 
+		} 
+		return rmdir($dir); 
+	} 
+	function RemoveUser($_token){
+		global $db;
+		$userID = GetIdFromToken($_token);
+		if( $userID == 0){
+			echo "Invalid Token.";
+			return false;
+		}
+		// rmdir(__DIR__ . "/" . $userID);
+		if(file_exists(__DIR__ . "/" . $userID))
+			delTree(__DIR__ . "/" . $userID);
+		$sql = "DELETE from users WHERE Id='$userID'";
+		$db->__exec__($sql);
+		return true;
 	}
 	function getDomainUrl($url){
 		$_scheme = parse_url($url, PHP_URL_SCHEME);
@@ -99,6 +126,7 @@
 			return "Invalid token";
 		}
 		$arrTopics = explode("%%", $topic);
+		$arrTopics[] = "Default";
 		foreach ($arrTopics as $value) {
 			if( !file_exists(__DIR__ . "/" . $Id . "/" . $value . "/")){
 				mkdir(__DIR__ . "/" . $Id . "/" . $value . "/");
@@ -109,7 +137,6 @@
 	function AddContents($_token, $_contents, $_topic){
 		global $db;
 		$Id = GetIdFromToken($_token);
-		// echo($_token);
 		if( $Id == 0){
 			return "Invalid token";
 		}
@@ -118,6 +145,15 @@
 		if( count($arrContents) < 2)return " less than 2 " . json_encode($arrContents);
 		$_url = $arrContents[0];
 		$texts = $arrContents[1];
+		$title = "";
+		if( count($arrContents) > 2)
+			$title = $arrContents[2];
+		$image_data = "";
+		if( count($arrContents) > 3){
+			$image = $arrContents[3];
+			$data = explode(",", $image);
+			$image_data = base64_decode($data[1]);
+		}
 		$texts = str_replace('href="/', 'href="' . getDomainUrl($_url) . "/", $texts);
 		$texts = str_replace('src="/', 'src="' . getDomainUrl($_url) . "/", $texts);
 
@@ -125,46 +161,89 @@
 		if( !file_exists(__DIR__ . "/" . $Id . "/" . $_topic . "/")){
 			mkdir(__DIR__ . "/" . $Id . "/" . $_topic . "/");
 		}
-		$urls = @file_get_contents(__DIR__ . "/" . $Id . "/" . $_topic . ".json");
-		$arrUrls = [];
-		if( $urls ){
-			$arrUrls = explode("\n", $urls);
+		$content_dir = __DIR__ . "/" . $Id . "/" . $_topic . "/" . "contents/";
+		if( !file_exists($content_dir)){
+			mkdir($content_dir);
 		}
-		foreach ($arrUrls as $url) {
-			if( strcasecmp($url, $_url) == 0){
-				return "same url";
+		$buf = @file_get_contents($content_dir . "contents.json");
+		$arrContents = [];
+		if( $buf){
+			$arrBuff = json_decode($buf);
+			foreach ($arrBuff as $value) {
+				$arrContents[] = $value;
 			}
 		}
-		$arrUrls[] = $_url;
-		$urls = implode("\n", $arrUrls);
-		file_put_contents(__DIR__ . "/" . $Id . "/" . $_topic . ".json", $urls);
-		file_put_contents(__DIR__ . "/" . $Id . "/" . $_topic . "/" . $time . ".html", $texts);
-		return $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $Id . "/" . $_topic . "/" . $time . ".html";
+		foreach ($arrContents as $value) {
+			if( strcasecmp( $value->url, $_url) == 0){
+				return "same url.";
+			}
+		}
+		$curContent = new \stdClass;
+
+		$curContent->id = $time;
+		$curContent->time = date("F-d, Y H:i a", $time);
+		$curContent->url = $_url;
+		$curContent->title = $title;
+
+		$arrContents[] = $curContent;
+		file_put_contents($content_dir . "contents.json", json_encode($arrContents));
+		file_put_contents($content_dir . $time . ".html", $texts);
+		file_put_contents($content_dir . $time . ".jpg", $image_data);
+
+		return $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $Id . "/" . $_topic . "/contents/" . $time . ".html";
+	}
+	function RemoveContent($token, $topicName, $id){
+		$_Id = GetIdFromToken($token);
+		if( $_Id == 0)
+			return false;
+		$dir = __DIR__ . "/" . $_Id . "/" . $topicName . "/contents/";
+		if( file_exists( $dir . $id . ".html")){
+			unlink($dir . $id . ".html");
+		}
+		if( file_exists( $dir . $id . ".jpg")){
+			unlink($dir . $id . ".jpg");
+		}
+		$contents = file_get_contents($dir . "contents.json");
+		if( !$contents)return false;
+		$arrContents = json_decode($contents);
+
+		for ($i = 0; $i < count($arrContents); $i++) { 
+			if( $arrContents[$i]->id == $id){
+				unset($arrContents[$i]);
+				file_put_contents($dir . "contents.json", json_encode($arrContents));
+				return true;
+			}
+		}
+		return false;
 	}
 	function GetAllUrls($_Id){
+		$urls = [];
 		$dirName = __DIR__ . "/" . $_Id . "/";
 		if(!file_exists($dirName))return [];
-		$files = scandir($dirName);
-		if( $files == FALSE)
-			return [];
-		$urls = [];
-		foreach ($files as $value) {
-			if( $value == "." || $value == ".."){
-				continue;
-			}
-			if( is_dir($dirName . $value)){
-				$topicObj = new \stdClass;
-				$subDirName = $dirName . $value . "/";
-				$subFiles = scandir($subDirName);
-				$topicObj->topic = $value;
-				$topicObj->urls = [];
-				foreach ($subFiles as $subValue) {
-					if( is_dir($subDirName . $subValue))continue;
-					$url = $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $_Id . "/" . $value . "/" . $subValue;
-					$topicObj->urls[] = $url;
+		$topicInfo = json_decode(file_get_contents(__DIR__ . "/" . $_Id . "/" . "topicInfo.dat"));
+		foreach ($topicInfo as $value) {
+			$topicName = $value->topicName;
+			$createdTime = $value->createdTime;
+			$topicObj = new \stdClass;
+			$topicObj->topic = $topicName;
+			$topicObj->createdTime = $createdTime;
+			$topicObj->urls = [];
+			$dir = __DIR__ . "/" . $_Id . "/" . $topicName;
+			$contents = @file_get_contents($dir . "/contents/contents.json");
+			if( !empty($contents)){
+				$arrContents = json_decode($contents);
+				foreach ($arrContents as $value_1) {
+					$content = new \stdClass;
+					$content->id = $value_1->id;
+					$content->time = $value_1->time;
+					$content->originalUrl = $value_1->url;
+					$content->title = $value_1->title;
+					$content->image = $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $_Id . "/" . $topicName . "/" . "contents/" . $content->id . ".jpg";
+					$content->url = $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $_Id . "/" . $topicName . "/" . "contents/" . $content->id . ".html";
+					$topicObj->urls[] = $content;
 				}
-				$urls[] = $topicObj;
 			}
+			$urls[] = $topicObj;
 		}
 		return $urls;
 	}

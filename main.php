@@ -39,6 +39,10 @@ if( $token != ""){
 	.topics .btn{
 		margin-right: 1px;
 	}
+	.img_contents{
+		width: 70px;
+		height: 70px;
+	}
 </style>
 <div class="col-lg-12">
 	<div style="float: right;">
@@ -46,6 +50,7 @@ if( $token != ""){
 	</div>
 	<br>
 	<h2>My contents</h2>
+	<button class="btn btn-danger" onclick="removeAccount()">Remove Account</button>
 	<p>There are <?=count($myData)?> topics.</p>
 	<div class="topic_list button-group">
 		<ul>
@@ -70,10 +75,20 @@ if( $token != ""){
 		?>
 		<ul class="contents <?=$_i==1?'':'HideItem'?>" id="contents<?=$_i?>">
 			<?php
-			foreach ($value->urls as $url) {
+			$i = 0;
+			// print_r($value);
+			foreach ($value->urls as $content) {
+				// print_r($content);
+				$url = $content->url;
+				$title = $content->title;
+				$img_src = $content->image;
+				$id = $content->id;
 			?>
-			<li><a href="<?=$url?>" target='_blank'><?=basename($url)?></a></li>
+			<li id="_<?=$id?>"><span title="remove" onclick="remove('<?=$value->topic?>',<?=$id?>)" style="cursor: pointer; color: blue;">&times;</span>&nbsp&nbsp&nbsp&nbsp
+				<span><img src="<?=$img_src?>" class="img_contents"></span>
+				<a href="<?=$url?>" target='_blank'><?=$title?></a></li>
 			<?php
+				$i++;
 			}
 			?>
 		</ul>
@@ -88,6 +103,27 @@ if( $token != ""){
 		$("#topics" + _i).find(".btn").removeClass("btn-secondary").addClass("btn-primary");
 		$(".contents").addClass('HideItem');
 		$("#contents" + _i).removeClass('HideItem');
+	}
+	function removeAccount(){
+		var ss = window.confirm("Are you sure to remove account?");
+		if( ss == true){
+			// alert("remove action.");
+			$.get("api_context.php?action=removeUser&token=" + '<?=$token?>', function(data){
+				if( data == "Removed."){
+					window.location.href = "logout.php";
+				}
+			});
+		}
+	}
+	function remove(_topicName,_id){
+		var ss = window.confirm("Are you sure to remove current url?");
+		if( ss == true){
+			$.get("api_context.php?action=removeContent&token=<?=$token?>&topicName=" + _topicName + "&id=" + _id, function(data){
+				if( data == "Removed."){
+					$("#_" + _id).remove();
+				}
+			});
+		}
 	}
 </script>
 <?php

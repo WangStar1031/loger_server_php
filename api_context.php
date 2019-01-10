@@ -22,6 +22,24 @@ switch ($action) {
 			echo "Inserted.";
 		}
 		break;
+	case 'removeContent':
+		$token = "";
+		if( isset($_GET['token'])) $token = $_GET['token'];
+		if( isset($_POST['token'])) $token = $_POST['token'];
+		$topicName = "";
+		if( isset($_GET['topicName'])) $topicName = $_GET['topicName'];
+		if( isset($_POST['topicName'])) $topicName = $_POST['topicName'];
+		$id = "";
+		if( isset($_GET['id'])) $id = $_GET['id'];
+		if( isset($_POST['id'])) $id = $_POST['id'];
+		if( RemoveContent($token, $topicName, $id)) echo "Removed.";
+		break;
+	case 'removeUser':
+		$token = "";
+		if( isset($_GET['token'])) $token = $_GET['token'];
+		if( isset($_POST['token'])) $token = $_POST['token'];
+		if( RemoveUser($token)) echo "Removed.";
+		break;
 	case 'verifyUser':
 		$email = "";
 		if( isset($_GET['email'])) $email = $_GET['email'];
