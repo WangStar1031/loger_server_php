@@ -87,6 +87,15 @@ switch ($action) {
 		$contents = GetAllContentsFromToken($token);
 		echo json_encode($contents);
 		break;
+	case 'createReport':
+		$token = "";
+		if( isset($_GET['token'])) $token = $_GET['token'];
+		if( isset($_POST['token'])) $token = $_POST['token'];
+		$topicName = "";
+		if( isset($_GET['topic'])) $topicName = $_GET['topic'];
+		if( isset($_POST['topic'])) $topicName = $_POST['topic'];
+		makePDF( $token, $topicName);
+		break;
 	case 'removeTodo':
 		$token = "";
 		if( isset($_GET['token'])) $token = $_GET['token'];

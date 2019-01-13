@@ -20,9 +20,82 @@
 
 	require_once __DIR__ . "/mysql.php";
 
+	require_once __DIR__ . '/fpdf/fpdf.php';
+
 	$db = new Mysql();
 	$db->exec("set names utf8");
 
+	function makePDF( $token, $topicName){
+		// print_r("makePDF");
+		$Id = GetIdFromToken($token);
+		$topicInfo = getTopicInfo( $token, $topicName);
+
+		$pdf = new FPDF('P', 'mm', 'A4');
+		$pdf->SetMargins(20, 20, 20);
+		$pdf->SetFont('Arial', 'b', 24);
+		$pdf->SetTextColor(80,80,80);
+		$pdf->AddPage();
+		$pdf->Write( 6, "Loger Report");
+		$pdf->Write( 20, "\n");
+
+		$pdf->SetFont('Arial', 'b', 16);
+		$pdf->Write( 6, "Topic researched: " . $topicName);
+
+		$pdf->Write( 10, "\n");
+		$pdf->Write( 6, "Websites visited\n");
+
+		$contents = @file_get_contents(__DIR__ . "/" . $Id . "/" . $topicName . "/contents/contents.json");
+		$pdf->SetFont('Arial', '', 10);
+		if($contents){
+			$arrContents = json_decode($contents);
+			$index = 0;
+			foreach ($arrContents as $value) {
+				$index++;
+				$pdf->Write( 6, "    " . $index . ". " . $value->url . "\n");
+			}
+		}
+
+		$pdf->SetFont('Arial', 'b', 16);
+		$pdf->Write( 6, "Images uploaded \n");
+
+		foreach ($topicInfo->photoUrls as $value) {
+			$pdf->Ln();
+			list($width, $height) = getimagesize($value);
+			$realHeight = $height * 100 / $width;
+			// print_r($width . ":" . $height . ":" . $realHeight . "-------");
+			if( $realHeight + $pdf->GetY() > $pdf->getPageHeight() - 20){
+				$pdf->AddPage();
+			}
+			$pdf->Image($value, $pdf->GetX(), $pdf->GetY(), 100, 0, 'PNG');
+			$pdf->SetY($pdf->GetY() + $realHeight);
+		}
+
+		$pdf->Write( 6, "Files Uploaded: \n");
+		$index = 0;
+		$pdf->SetFont('Arial', '', 10);
+		foreach ($topicInfo->attachementsUrls as $value) {
+			$fileBaseName = basename($value);
+			$arrTemp = explode("_", $fileBaseName);
+			unset($arrTemp[0]);
+			$baseName = implode("_", $arrTemp);
+			$index ++;
+			$pdf->Write( 6, "    " . $index . ". " . $baseName . "\n");
+		}
+
+		$pdf->SetFont('Arial', 'b', 16);
+		$pdf->Write( 6, "\nNotes Created: \n");
+		$index = 0;
+		$pdf->SetFont('Arial', '', 10);
+		foreach ($topicInfo->notelist as $value) {
+			$index ++;
+			$pdf->Write( 6, "    Note" . $index . " (" . trim($value->content) . ")\n");
+		}
+		
+		$fileName = __DIR__ . "/" . $Id . "/" . $topicName . "/report(" . $topicName . ").pdf";
+
+		$pdf->Output( 'F', $fileName);
+		echo $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $Id . "/" . $topicName . "/report(" . $topicName . ").pdf";
+	}
 	function makeEncryptKey($_keyword){
 		if( $_keyword == "")return "";
 		$_key1 = crypt(time(), "");
@@ -388,13 +461,6 @@
 			}
 			file_put_contents($fileName, json_encode($arrResults));
 			return true;
-			// for( $i = 0; $i < count($arrTodos); $i++){
-			// 	if( $arrTodos[$i]->id == $id){
-			// 		unset($arrTodos[$i]);
-			// 		file_put_contents($fileName, json_encode($arrTodos));
-			// 		return true;
-			// 	}
-			// }
 		}  else{
 			return false;
 		}
