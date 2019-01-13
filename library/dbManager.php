@@ -119,20 +119,97 @@
 		}
 		return $retVal;
 	}
-	function AddTopic($token, $topic){
-		global $db;
+	function getTopics($token){
 		$Id = GetIdFromToken($token);
 		if( $Id == 0){
-			return "Invalid token";
+			return "";
 		}
-		$arrTopics = explode("%%", $topic);
-		$arrTopics[] = "Default";
+		$fileName = __DIR__ . "/" . $Id . "/" . "topicInfo.dat";
+		$contents = file_get_contents( $fileName);
+		$arrTopics = json_decode($contents);
+		$arrTopicNames = [];
 		foreach ($arrTopics as $value) {
-			if( !file_exists(__DIR__ . "/" . $Id . "/" . $value . "/")){
-				mkdir(__DIR__ . "/" . $Id . "/" . $value . "/");
+			$arrTopicNames[] = $value->topicName;
+		}
+		return implode("%%", $arrTopicNames);
+	}
+	function AddTopic($token, $topic){
+		$Id = GetIdFromToken($token);
+		if( $Id == 0){
+			return "Invalid token.";
+		}
+		$fileName = __DIR__ . "/" . $Id . "/" . "topicInfo.dat";
+		$contents = file_get_contents( $fileName);
+		$arrTopics = json_decode($contents);
+		foreach ($arrTopics as $value) {
+			if( strcasecmp($value->topicName, $topic) == 0){
+				return "Existing topic.";
 			}
 		}
-		return "Done.";
+		$curTopic = new \stdClass;
+		$curTopic->topicName = $topic;
+		$curTopic->createdTime = date("Y-F-d H:i a");
+		$arrTopics[] = $curTopic;
+		file_put_contents($fileName, json_encode($arrTopics));
+		mkdir(__DIR__ . "/" . $Id . "/" . $topic . "/");
+		return "OK";
+	}
+	function getTopicInfo($token, $topicName){
+		$Id = GetIdFromToken($token);
+		if( $Id == 0){
+			return "";
+		}
+		$dirName = __DIR__ . "/" . $Id . "/";
+		$contents = file_get_contents($dirName . "topicInfo.dat");
+		$arrTopics = json_decode($contents);
+		$retVal = new \stdClass;
+		foreach ($arrTopics as $value) {
+			if( strcasecmp($topicName, $value->topicName) == 0){
+				$retVal->topicName = $topicName;
+				$retVal->createdTime = $value->createdTime;
+				$retVal->viewedCount = 0;
+				if( file_exists($dirName . $topicName . "/contents/contents.json")){
+					$views = json_decode(file_get_contents($dirName . $topicName . "/contents/contents.json"));
+					$retVal->viewedCount = count($views);
+				}
+				$retVal->photoTagged = 0;
+				$retVal->photoUrls = [];
+				if( file_exists($dirName . $topicName . "/photos/")){
+					$photoDir = $dirName . $topicName . "/photos/";
+					$photos = scandir($photoDir);
+					foreach ($photos as $value) {
+						if( $value == ".." || $value ==".")
+							continue;
+						$retVal->photoUrls[] = $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $Id . "/" . $topicName . "/" . "photos/" . $value;
+					}
+					$retVal->photoTagged = count($retVal->photoUrls);
+					// $views = json_decode(file_get_contents($dirName . $topicName . "/photos/photos.json"));
+					// $retVal->viewedCount = count($views);
+				}
+				$retVal->todolist = [];
+				if( file_exists($dirName . $topicName . "/todolist.json")){
+					$todolist = json_decode(file_get_contents($dirName . $topicName . "/todolist.json"));
+					$retVal->todolist = $todolist;
+				}
+				$retVal->notelist = [];
+				if( file_exists($dirName . $topicName . "/notelist.json")){
+					$notelist = json_decode(file_get_contents($dirName . $topicName . "/notelist.json"));
+					$retVal->notelist = $notelist;
+				}
+				$retVal->noteCount = count($retVal->notelist);
+				$retVal->attachementsUrls = [];
+				if( file_exists($dirName . $topicName . "/attachements/")){
+					$photoDir = $dirName . $topicName . "/attachements/";
+					$files = scandir($photoDir);
+					foreach ($files as $value) {
+						if( $value == ".." || $value ==".")
+							continue;
+						$retVal->attachementsUrls[] = $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . dirname( $_SERVER['REQUEST_URI']) . "/library/" . $Id . "/" . $topicName . "/" . "attachements/" . $value;
+					}
+				}
+			}
+		}
+		return $retVal;
 	}
 	function AddContents($_token, $_contents, $_topic){
 		global $db;
@@ -277,5 +354,96 @@
 			return [];
 		return GetAllUrls($Id);
 	}
-
+	function insertNote($token, $topic, $NoteText){
+		$Id = GetIdFromToken($token);
+		if( $Id == 0)
+			return "";
+		$fileName = __DIR__ . "/" . $Id . "/" . $topic . "/notelist.json";
+		$fileContents = @file_get_contents($fileName);
+		$arrTodos = [];
+		if( $fileContents){
+			$arrTodos = json_decode($fileContents);
+		}
+		$todo = new \stdClass;
+		$todo->id = time();
+		$todo->content = $NoteText;
+		$arrTodos[] = $todo;
+		file_put_contents($fileName, json_encode($arrTodos));
+		return $todo->id;
+	}
+	function removeNote($token, $topic, $id){
+		$Id = GetIdFromToken($token);
+		if( $Id == 0)
+			return false;
+		$fileName = __DIR__ . "/" . $Id . "/" . $topic . "/notelist.json";
+		$fileContents = @file_get_contents($fileName);
+		// $arrTodos = [];
+		if( $fileContents){
+			$arrTodos = json_decode($fileContents);
+			$arrResults = [];
+			foreach ($arrTodos as $value) {
+				if( $value->id != $id){
+					$arrResults[] = $value;
+				}
+			}
+			file_put_contents($fileName, json_encode($arrResults));
+			return true;
+			// for( $i = 0; $i < count($arrTodos); $i++){
+			// 	if( $arrTodos[$i]->id == $id){
+			// 		unset($arrTodos[$i]);
+			// 		file_put_contents($fileName, json_encode($arrTodos));
+			// 		return true;
+			// 	}
+			// }
+		}  else{
+			return false;
+		}
+		return false;
+	}
+	function insertTodo($token, $topic, $todoText){
+		$Id = GetIdFromToken($token);
+		if( $Id == 0)
+			return "";
+		$fileName = __DIR__ . "/" . $Id . "/" . $topic . "/todolist.json";
+		$fileContents = @file_get_contents($fileName);
+		$arrTodos = [];
+		if( $fileContents){
+			$arrTodos = json_decode($fileContents);
+		}
+		$todo = new \stdClass;
+		$todo->id = time();
+		$todo->content = $todoText;
+		$arrTodos[] = $todo;
+		file_put_contents($fileName, json_encode($arrTodos));
+		return $todo->id;
+	}
+	function removeTodo($token, $topic, $id){
+		$Id = GetIdFromToken($token);
+		if( $Id == 0)
+			return false;
+		$fileName = __DIR__ . "/" . $Id . "/" . $topic . "/todolist.json";
+		$fileContents = @file_get_contents($fileName);
+		// $arrTodos = [];
+		if( $fileContents){
+			$arrTodos = json_decode($fileContents);
+			$arrResults = [];
+			foreach ($arrTodos as $value) {
+				if( $value->id != $id){
+					$arrResults[] = $value;
+				}
+			}
+			file_put_contents($fileName, json_encode($arrResults));
+			return true;
+			// for( $i = 0; $i < count($arrTodos); $i++){
+			// 	if( $arrTodos[$i]->id == $id){
+			// 		unset($arrTodos[$i]);
+			// 		file_put_contents($fileName, json_encode($arrTodos));
+			// 		return true;
+			// 	}
+			// }
+		}  else{
+			return false;
+		}
+		return false;
+	}
 ?>
